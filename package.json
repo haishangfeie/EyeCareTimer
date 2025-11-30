@@ -1,0 +1,53 @@
+{
+  "name": "eye-care-timer",
+  "version": "1.0.0",
+  "description": "",
+  "main": "electron/main.js",
+  "scripts": {
+    "dev:electron": "electron ./electron/main.js",
+    "dev:app": "pnpm --filter app dev",
+    "dev": "concurrently \"pnpm dev:app\" \"pnpm dev:electron\"",
+    "build:app": "pnpm --filter app build",
+    "build:electron": "electron-builder --win nsis --x64",
+    "release": "pnpm build:app && pnpm build:electron"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/haishangfeie/EyeCareTimer.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/haishangfeie/EyeCareTimer/issues"
+  },
+  "homepage": "https://github.com/haishangfeie/EyeCareTimer#readme",
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "concurrently": "^9.2.1",
+    "electron": "^39.2.4",
+    "electron-builder": "^26.0.12",
+    "wait-on": "^9.0.3"
+  },
+  "dependencies": {
+    "auto-launch": "^5.0.6",
+    "electron-store": "^11.0.2"
+  },
+  "build": {
+    "appId": "com.haishagnfeie.eyecaretimer",
+    "productName": "EyeCareTimer",
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "./package.json"
+    ],
+    "win": {
+      "icon": "build/icon.ico",
+      "target": "nsis"
+    },
+    "directories": {
+      "app": ".",
+      "output": "release"
+    }
+  }
+}
