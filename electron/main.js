@@ -1,7 +1,6 @@
 const { app, BrowserWindow, Tray, Menu, ipcMain } = require('electron');
 const path = require('path');
 const Store = require('electron-store').default;
-console.log('Store', Store);
 const AutoLaunch = require('auto-launch');
 
 let tray = null;
@@ -12,9 +11,9 @@ let breakTimer = null;
 
 let breakWindow = null;
 
-const PREPARE_HIDE_MS = 20_000; // 20秒
+let nextBreakTime = void 0;
 
-let nextBreakTime;
+const PREPARE_HIDE_MS = 20_000; // 20秒
 
 const store = new Store({
   projectName: 'eye-care-timer',
@@ -45,6 +44,7 @@ if (!gotTheLock) {
 
   app.whenReady().then(async () => {
     createTray();
+    startWorkTimer();
 
     const autoLaunch = store.get('autoLaunch');
     if (autoLaunch) {
@@ -52,8 +52,6 @@ if (!gotTheLock) {
     } else {
       if (await launcher.isEnabled()) await launcher.disable();
     }
-
-    startWorkTimer();
   });
 }
 
@@ -158,12 +156,18 @@ function createTray() {
 
 function startWorkTimer() {
   if (workTimer) clearTimeout(workTimer);
+  if (breakTimer) clearTimeout(breakTimer);
+  breakTimer = null;
   const workMs = store.get('workMin') * 60_000;
   const breakMs = store.get('breakMin') * 60_000;
   nextBreakTime = +new Date() + workMs;
+  updateNextRestTime(nextBreakTime);
   workTimer = setTimeout(() => {
+    workTimer = null;
     createBreakWindow();
+    if (breakTimer) clearTimeout(breakTimer);
     breakTimer = setTimeout(() => {
+      breakTimer = null;
       closeBreakWindow();
       startWorkTimer();
     }, breakMs);
@@ -217,4 +221,38 @@ function closeBreakWindow() {
   } else {
     console.log('closeBreakWindow不应该进入到这里');
   }
+}
+
+function updateNextRestTime(nextBreakTime) {
+  store.set('nextBreakTime', nextBreakTime);
+
+  // 格式化时间戳
+  const text = formatTimestamp(nextBreakTime).standard;
+
+  if (tray) {
+    // 更新托盘悬浮提示
+    tray.setToolTip(`下次休息时间：${text}`);
+  }
+
+  if (configWindow) {
+    configWindow.webContents.send('next-rest-time', nextBreakTime);
+  }
+}
+
+function formatTimestamp(timestamp) {
+  const date = new Date(timestamp);
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const seconds = String(date.getSeconds()).padStart(2, '0');
+
+  // 返回两种格式
+  return {
+    standard: `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`,
+    chinese: `${year}年${month}月${day}日 ${hours}时${minutes}分${seconds}秒`,
+  };
 }

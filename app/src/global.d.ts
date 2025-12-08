@@ -12,7 +12,9 @@ declare global {
         workMin: number;
         breakMin: number;
         autoLaunch: boolean;
+        nextBreakTime: number;
       }>;
+      onNextRestTime: (cb: (time: number) => void) => void;
     };
     breakAPI: {
       close: () => Promise<void>;

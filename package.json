@@ -1,6 +1,6 @@
 {
   "name": "eye-care-timer",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "",
   "main": "electron/main.js",
   "scripts": {
@@ -23,7 +23,7 @@
   },
   "homepage": "https://github.com/haishangfeie/EyeCareTimer#readme",
   "devDependencies": {
-    "@types/node": "^24.10.1",
+    "@types/node": "^22.19.1",
     "concurrently": "^9.2.1",
     "electron": "^39.2.4",
     "electron-builder": "^26.0.12",
@@ -39,7 +39,8 @@
     "files": [
       "dist/**/*",
       "electron/**/*",
-      "./package.json"
+      "./package.json",
+      "!app/node_modules/**"
     ],
     "win": {
       "icon": "build/icon.ico",

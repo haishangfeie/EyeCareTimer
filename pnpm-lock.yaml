@@ -16,8 +16,8 @@ importers:
         version: 11.0.2
     devDependencies:
       '@types/node':
-        specifier: ^24.10.1
-        version: 24.10.1
+        specifier: ^22.19.1
+        version: 22.19.1
       concurrently:
         specifier: ^9.2.1
         version: 9.2.1
@@ -27,12 +27,6 @@ importers:
       electron-builder:
         specifier: ^26.0.12
         version: 26.0.12(electron-builder-squirrel-windows@26.0.12)
-      vite-plugin-electron:
-        specifier: ^0.29.0
-        version: 0.29.0(vite-plugin-electron-renderer@0.14.6)
-      vite-plugin-electron-renderer:
-        specifier: ^0.14.6
-        version: 0.14.6
       wait-on:
         specifier: ^9.0.3
         version: 9.0.3
@@ -1805,17 +1799,6 @@ packages:
   verror@1.10.1:
     resolution: {integrity: sha512-veufcmxri4e3XSrT0xwfUR7kguIkaxBeosDg00yDWhk49wdwkSUrvvsm7nc75e1PUyvIeZj6nS8VQRYz2/S4Xg==}
     engines: {node: '>=0.6.0'}
-
-  vite-plugin-electron-renderer@0.14.6:
-    resolution: {integrity: sha512-oqkWFa7kQIkvHXG7+Mnl1RTroA4sP0yesKatmAy0gjZC4VwUqlvF9IvOpHd1fpLWsqYX/eZlVxlhULNtaQ78Jw==}
-
-  vite-plugin-electron@0.29.0:
-    resolution: {integrity: sha512-HP0DI9Shg41hzt55IKYVnbrChWXHX95QtsEQfM+szQBpWjVhVGMlqRjVco6ebfQjWNr+Ga+PeoBjMIl8zMaufw==}
-    peerDependencies:
-      vite-plugin-electron-renderer: '*'
-    peerDependenciesMeta:
-      vite-plugin-electron-renderer:
-        optional: true
 
   vite@7.2.4:
     resolution: {integrity: sha512-NL8jTlbo0Tn4dUEXEsUg8KeyG/Lkmc4Fnzb8JXN/Ykm9G4HNImjtABMJgkQoVjOBN/j2WAwDTRytdqJbZsah7w==}
@@ -3827,12 +3810,6 @@ snapshots:
       core-util-is: 1.0.2
       extsprintf: 1.4.1
     optional: true
-
-  vite-plugin-electron-renderer@0.14.6: {}
-
-  vite-plugin-electron@0.29.0(vite-plugin-electron-renderer@0.14.6):
-    optionalDependencies:
-      vite-plugin-electron-renderer: 0.14.6
 
   vite@7.2.4(@types/node@24.10.1):
     dependencies:
