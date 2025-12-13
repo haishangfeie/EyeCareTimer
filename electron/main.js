@@ -69,6 +69,12 @@ app.on('before-quit', () => {
   isQuitting = true;
 });
 
+app.on('window-all-closed', (event) => {
+  if (!isQuitting) {
+    event.preventDefault(); // 阻止默认退出行为
+  }
+});
+
 app.whenReady().then(async () => {
   cleanOldLogs(); // 每次启动时清理旧日志
 
@@ -160,13 +166,6 @@ function createConfigWindow() {
   configWindow.on('closed', () => {
     configWindow = null;
   });
-  // 拦截关闭事件，改为隐藏窗口
-  configWindow.on('close', (event) => {
-    if (!isQuitting) {
-      event.preventDefault();
-      configWindow.hide();
-    }
-  });
 }
 
 function createTray() {
@@ -253,7 +252,6 @@ function createBreakWindow() {
     fullscreen: true,
     frame: false,
     alwaysOnTop: true,
-    skipTaskbar: false,
     skipTaskbar: true,
     movable: false,
     resizable: false,
