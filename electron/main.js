@@ -331,7 +331,7 @@ function getLogFile() {
 }
 
 function writeLog(level, message) {
-  const time = new Date().toISOString();
+  const time = formatTimestamp(+new Date()).standard;
   const line = `[${time}] [${level}] ${message}\n`;
   fs.appendFileSync(getLogFile(), line);
 }
@@ -352,4 +352,22 @@ function cleanOldLogs() {
       }
     }
   });
+}
+
+function formatTimestamp(timestamp: number) {
+  const date = new Date(timestamp);
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const seconds = String(date.getSeconds()).padStart(2, '0');
+
+  // 返回两种格式
+  return {
+    standard: `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`,
+    chinese: `${year}年${month}月${day}日 ${hours}时${minutes}分${seconds}秒`,
+  };
 }
