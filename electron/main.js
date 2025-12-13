@@ -1,7 +1,16 @@
-const { app, BrowserWindow, Tray, Menu, ipcMain } = require('electron');
+const {
+  app,
+  BrowserWindow,
+  Tray,
+  Menu,
+  ipcMain,
+  dialog,
+  shell,
+} = require('electron');
 const path = require('path');
 const Store = require('electron-store').default;
 const AutoLaunch = require('auto-launch');
+const fs = require('fs');
 
 let tray = null;
 let configWindow = null;
@@ -14,6 +23,14 @@ let breakWindow = null;
 let nextBreakTime = void 0;
 
 const PREPARE_HIDE_MS = 20_000; // 20秒
+
+let isQuitting = false;
+
+// 日志目录
+const logDir = path.join(app.getPath('userData'), 'logs');
+if (!fs.existsSync(logDir)) {
+  fs.mkdirSync(logDir);
+}
 
 const store = new Store({
   projectName: 'eye-care-timer',
@@ -30,30 +47,41 @@ const gotTheLock = app.requestSingleInstanceLock();
 if (!gotTheLock) {
   // 没拿到锁，说明已有实例在运行，直接退出
   app.quit();
-} else {
-  // 拿到锁，说明这是唯一的实例，可以继续创建窗口和托盘
-  app.on('second-instance', () => {
-    // 如果用户再次双击 exe，就会触发这个事件
-    if (configWindow) {
-      if (configWindow.isMinimized()) configWindow.restore();
-      configWindow.show();
-    } else {
-      createConfigWindow();
-    }
-  });
-
-  app.whenReady().then(async () => {
-    createTray();
-    startWorkTimer();
-
-    const autoLaunch = store.get('autoLaunch');
-    if (autoLaunch) {
-      if (!(await launcher.isEnabled())) await launcher.enable();
-    } else {
-      if (await launcher.isEnabled()) await launcher.disable();
-    }
-  });
+  return;
 }
+
+// 拿到锁，说明这是唯一的实例，可以继续创建窗口和托盘
+app.on('second-instance', () => {
+  // 如果用户再次双击 exe，就会触发这个事件
+  if (configWindow) {
+    if (configWindow.isMinimized()) configWindow.restore();
+    configWindow.show();
+  } else {
+    createConfigWindow();
+  }
+});
+
+app.on('will-quit', () => {
+  writeLog('info', '应用正在正常退出');
+});
+
+app.on('before-quit', () => {
+  isQuitting = true;
+});
+
+app.whenReady().then(async () => {
+  cleanOldLogs(); // 每次启动时清理旧日志
+
+  createTray();
+  startWorkTimer();
+
+  const autoLaunch = store.get('autoLaunch');
+  if (autoLaunch) {
+    if (!(await launcher.isEnabled())) await launcher.enable();
+  } else {
+    if (await launcher.isEnabled()) await launcher.disable();
+  }
+});
 
 // IPC 通信：接收配置
 ipcMain.handle('config:update', async (_event, config) => {
@@ -88,6 +116,21 @@ ipcMain.handle('break:prepare', () => {
   }
 });
 
+// 捕捉异常和退出
+process.on('uncaughtException', (err) => {
+  writeLog('error', `未捕获的异常: ${err.stack || err}`);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  const detail =
+    reason instanceof Error ? reason.stack : JSON.stringify(reason);
+  writeLog('warn', `未处理的 Promise 拒绝: ${detail}`);
+});
+
+process.on('exit', (code) => {
+  writeLog('info', `进程退出，退出码: ${code}`);
+});
+
 function createConfigWindow() {
   if (configWindow) {
     configWindow.focus();
@@ -119,8 +162,10 @@ function createConfigWindow() {
   });
   // 拦截关闭事件，改为隐藏窗口
   configWindow.on('close', (event) => {
-    event.preventDefault();
-    configWindow.hide();
+    if (!isQuitting) {
+      event.preventDefault();
+      configWindow.hide();
+    }
   });
 }
 
@@ -139,6 +184,28 @@ function createTray() {
       },
     },
     { label: '立即休息', click: () => createBreakWindow() },
+    {
+      label: '帮助',
+      submenu: [
+        {
+          label: '关于',
+          click: () => {
+            dialog.showMessageBox({
+              type: 'info',
+              title: '关于护眼时光',
+              message: `护眼时光\n版本: ${app.getVersion()}`,
+              buttons: ['确定'],
+            });
+          },
+        },
+      ],
+    },
+    {
+      label: '查看退出日志',
+      click: () => {
+        shell.openPath(logDir); // 打开日志目录
+      },
+    },
     { label: '退出', click: () => app.quit() },
   ]);
   tray.setToolTip('护眼时光');
@@ -255,4 +322,34 @@ function formatTimestamp(timestamp) {
     standard: `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`,
     chinese: `${year}年${month}月${day}日 ${hours}时${minutes}分${seconds}秒`,
   };
+}
+
+// 获取今天的日志文件路径
+function getLogFile() {
+  const date = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+  return path.join(logDir, `exit-${date}.log`);
+}
+
+function writeLog(level, message) {
+  const time = new Date().toISOString();
+  const line = `[${time}] [${level}] ${message}\n`;
+  fs.appendFileSync(getLogFile(), line);
+}
+
+// 清理超过 14 天的日志
+function cleanOldLogs() {
+  const files = fs.readdirSync(logDir);
+  const now = Date.now();
+  const maxAge = 14 * 24 * 60 * 60 * 1000; // 14 天
+
+  files.forEach((file) => {
+    const match = file.match(/^exit-(\d{4}-\d{2}-\d{2})\.log$/);
+    if (match) {
+      const fileDate = new Date(match[1]).getTime();
+      if (now - fileDate > maxAge) {
+        fs.unlinkSync(path.join(logDir, file));
+        console.log(`Deleted old log: ${file}`);
+      }
+    }
+  });
 }
